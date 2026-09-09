@@ -127,6 +127,8 @@ esfuerzo `null`, árbol de 3+ niveles, mezcla de los 4 estados, hijo `DONE` bajo
   se hablan por nombre de servicio y puerto real.
 - `GET /health` devuelve 200 sin tocar la base. Es liveness, no readiness: si consultara
   Postgres, un fallo no distinguiría contenedor caído de base caída.
+- Probar cambios en el healthcheck o en `schema.sql` requiere `docker compose down -v`: con el
+  volumen poblado, initdb se saltea entero y el cambio nunca se ejerce.
 
 **Delete:** `ON DELETE CASCADE` borra el subárbol completo en silencio. El frontend confirma
 mostrando cuántas subtareas se van a borrar antes de ejecutar.
