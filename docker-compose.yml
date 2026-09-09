@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: task_system
+      POSTGRES_PASSWORD: task_system
+      POSTGRES_DB: task_system
+    ports:
+      # 5433 en el host: el 5432 está ocupado por una instalación local de Windows.
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Solo corre con el volumen vacío. Para reaplicar el schema: docker compose down -v
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      # -h fuerza TCP: durante initdb el servidor temporal escucha solo en el socket unix, así
+      # que sin el -h el check puede dar healthy antes de que schema.sql se haya aplicado.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U task_system -d task_system"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      # postgres:5432 — el mapeo a 5433 es solo para el host. Dentro de la red de Compose los
+      # servicios se hablan por nombre de servicio y puerto real.
+      DATABASE_URL: postgres://task_system:task_system@postgres:5432/task_system
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
