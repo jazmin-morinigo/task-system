@@ -3,6 +3,13 @@
 App de gestión de tareas para un equipo de dev: CRUD con subtareas anidadas de profundidad
 arbitraria y agregación de esfuerzo sobre todo el árbol.
 
+## Entorno de ejecución
+
+Claude Code corre en su propio sandbox Linux: **no ve el Docker Desktop de esta máquina.** Nunca
+afirmar que un contenedor levantó, que un puerto responde o que un build pasó. Escribir los
+archivos, indicar el comando exacto a correr, y esperar la salida textual pegada desde la
+terminal del host.
+
 ## Reglas duras
 
 - **No instalar dependencias nuevas sin preguntar antes.** Incluye eslint, prettier, husky,
@@ -111,8 +118,22 @@ esfuerzo `null`, árbol de 3+ niveles, mezcla de los 4 estados, hijo `DONE` bajo
 `/docker-entrypoint-initdb.d/` solo corre con volumen vacío — para reaplicar `schema.sql`,
 `docker compose down -v`.
 
+- Base `node:22-alpine`, consistente con `engines >=22`. Sin dependencias nativas.
+- Puertos: `3000:3000` para el API, `5433:5432` para Postgres. El `5432` del host está ocupado
+  por una instalación local de Windows.
+- `DATABASE_URL` tiene dos formas. Desde el host en desarrollo apunta a `localhost:5433` y vive
+  en `api/.env`; desde el contenedor apunta a `postgres:5432` y va en el `environment:` del
+  compose. El mapeo de puertos es solo para el host — dentro de la red de Compose los servicios
+  se hablan por nombre de servicio y puerto real.
+- `GET /health` devuelve 200 sin tocar la base. Es liveness, no readiness: si consultara
+  Postgres, un fallo no distinguiría contenedor caído de base caída.
+
 **Delete:** `ON DELETE CASCADE` borra el subárbol completo en silencio. El frontend confirma
 mostrando cuántas subtareas se van a borrar antes de ejecutar.
+
+**Pendiente (Bloque 4):** al pasar el Dockerfile a multi-stage, dejar una etapa nombrada que
+conserve las devDependencies para correr Vitest dentro de Docker. La imagen final las descarta y
+el README necesita un comando de tests que funcione sin Node instalado en el host.
 
 ## Git
 
