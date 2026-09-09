@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+*.log
+.env
+.env.*
+!.env.example
+.git/
+.claude/
+db/
+README.md
+CLAUDE.md
