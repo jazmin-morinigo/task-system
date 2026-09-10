@@ -1,5 +1,5 @@
 import { pool } from '../db/pool.js';
-import type { TaskPriority, TaskStatus } from '../lib/taskTypes.js';
+import type { TaskPriority, TaskRow, TaskStatus } from '../lib/taskTypes.js';
 
 interface RootFilter {
   status?: TaskStatus;
@@ -34,7 +34,7 @@ export interface FindAllRootsOptions extends RootFilter {
   orderBy: string;
 }
 
-export async function findAllRoots(options: FindAllRootsOptions) {
+export async function findAllRoots(options: FindAllRootsOptions): Promise<TaskRow[]> {
   const { clause, params } = buildRootWhere(options);
 
   params.push(options.limit);
@@ -42,7 +42,7 @@ export async function findAllRoots(options: FindAllRootsOptions) {
   params.push(options.offset);
   const offsetIdx = params.length;
 
-  const { rows } = await pool.query(
+  const { rows } = await pool.query<TaskRow>(
     `SELECT
        id,
        parent_id AS "parentId",
@@ -103,9 +103,9 @@ export async function create(input: CreateTaskRow) {
   return rows[0];
 }
 
-// Fila completa, mismo aliasing camelCase que findAllRoots/create. Sirve para dos casos: el
-// chequeo de existencia de parentId en createTask (le alcanza con que el resultado no sea null,
-// no hace falta una query más liviana aparte) y GET /tasks/:id.
+// Fila completa, mismo aliasing camelCase que findAllRoots/create. La usa el chequeo de
+// existencia de parentId en createTask (le alcanza con que el resultado no sea null, no hace
+// falta una query más liviana aparte). GET /tasks/:id no pasa por acá: usa findSubtrees.
 export async function findById(id: string) {
   const { rows } = await pool.query(
     `SELECT
@@ -124,6 +124,43 @@ export async function findById(id: string) {
   );
 
   return rows[0] ?? null;
+}
+
+// Subárboles completos como filas planas, en un solo viaje a la base para todos los ids
+// (CLAUDE.md, Contrato de la API): GET /tasks/:id lo siembra con un id, GET /tasks con los ids
+// de la página. Una query por raíz sería N+1.
+//
+// ANY($1::uuid[]) es un único placeholder que recibe el arreglo entero — con IN habría que armar
+// la lista de placeholders concatenando strings según la cantidad de ids.
+//
+// Precondición: los ids siembran subárboles disjuntos (las raíces de una página, o un id solo).
+// Con UNION ALL, un id que fuera descendiente de otro sembrado aparecería dos veces.
+//
+// El ORDER BY define el orden de los hermanos dentro del árbol (el más viejo primero), no el
+// orden de la página: ANY no respeta el orden del arreglo, eso lo repone el servicio.
+export async function findSubtrees(ids: string[]): Promise<TaskRow[]> {
+  const { rows } = await pool.query<TaskRow>(
+    `WITH RECURSIVE subtree AS (
+       SELECT * FROM tasks WHERE id = ANY($1::uuid[])
+       UNION ALL
+       SELECT t.* FROM tasks t JOIN subtree s ON t.parent_id = s.id
+     )
+     SELECT
+       id,
+       parent_id AS "parentId",
+       title,
+       description,
+       status,
+       priority,
+       estimated_effort AS "estimatedEffort",
+       created_at AS "createdAt",
+       updated_at AS "updatedAt"
+     FROM subtree
+     ORDER BY created_at ASC, id ASC`,
+    [ids],
+  );
+
+  return rows;
 }
 
 export interface UpdateTaskFields {

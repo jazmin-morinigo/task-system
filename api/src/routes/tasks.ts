@@ -103,7 +103,7 @@ tasksRouter.post('/', async (req, res, next) => {
   }
 });
 
-// Fila sola, sin subárbol — el CTE recursivo y el esfuerzo agregado son de otro paso.
+// Subárbol completo con el esfuerzo agregado por nodo (ver getTaskById).
 tasksRouter.get('/:id', async (req, res, next) => {
   try {
     const id = parseOrThrow(idParamSchema, req.params.id, 'Id inválido');

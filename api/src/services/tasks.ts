@@ -1,4 +1,13 @@
-import { countRoots, create, findAllRoots, findById, remove, update } from '../repositories/tasks.js';
+import {
+  countRoots,
+  create,
+  findAllRoots,
+  findById,
+  findSubtrees,
+  remove,
+  update,
+} from '../repositories/tasks.js';
+import { buildForest } from './aggregate.js';
 import { AppError } from '../lib/errors.js';
 import type { TaskPriority, TaskStatus } from '../lib/taskTypes.js';
 import { buildOrderBy, type Order, type SortBy } from '../lib/query.js';
@@ -77,14 +86,17 @@ export async function createTask(input: CreateTaskInput) {
   });
 }
 
+// Subárbol completo, sin filtrar (CLAUDE.md, Contrato de la API). Sembrado con un solo id, el
+// bosque tiene a lo sumo una raíz: la tarea pedida — aunque sea una subtarea, su padre no viene
+// en las filas y buildForest la trata como raíz.
 export async function getTaskById(id: string) {
-  const task = await findById(id);
+  const [tree] = buildForest(await findSubtrees([id]));
 
-  if (!task) {
+  if (!tree) {
     throw new AppError('La tarea no existe.', 404);
   }
 
-  return task;
+  return tree;
 }
 
 // Sin parentId — ni siquiera está en el tipo: zod ya lo bloqueó en la ruta antes de que un
