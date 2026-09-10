@@ -32,6 +32,7 @@ const PRIORITY_DOT_CLASSES: Record<TaskPriority, string> = {
 
 // Tres niveles distinguibles por tamaño/color/opacidad de guía; desde el nivel 3 el
 // tratamiento se estabiliza y solo aumenta la indentación (CLAUDE.md, Dirección de diseño).
+// Estructural — separado del contenido de la fila, así que no cambia entre breakpoints.
 function guideClasses(childDepth: number): string {
   if (childDepth === 1) return 'border-l-2 border-border'
   if (childDepth === 2) return 'border-l-[1.5px] border-border/60'
@@ -52,6 +53,7 @@ interface TaskTreeNodeProps {
 
 export function TaskTreeNode({ node, depth, onChanged, onDeleted }: TaskTreeNodeProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [showEffortDetail, setShowEffortDetail] = useState(false)
   const [dialogMode, setDialogMode] = useState<'edit' | 'create-child' | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -73,21 +75,89 @@ export function TaskTreeNode({ node, depth, onChanged, onDeleted }: TaskTreeNode
     }
   }
 
+  const collapseToggle = hasChildren ? (
+    <button
+      type="button"
+      onClick={() => setCollapsed((c) => !c)}
+      className="text-muted-foreground"
+      aria-label={collapsed ? 'Expandir subtareas' : 'Colapsar subtareas'}
+    >
+      {collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
+    </button>
+  ) : (
+    <span className="inline-block size-4" />
+  )
+
+  const actionButtons = (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Editar tarea"
+        onClick={() => setDialogMode('edit')}
+      >
+        <Pencil />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Agregar subtarea"
+        onClick={() => setDialogMode('create-child')}
+      >
+        <Plus />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        aria-label="Eliminar tarea"
+        onClick={() => setIsDeleteOpen(true)}
+      >
+        <Trash2 />
+      </Button>
+    </>
+  )
+
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3 border-b py-2 text-sm">
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={() => setCollapsed((c) => !c)}
-            className="text-muted-foreground"
-            aria-label={collapsed ? 'Expandir subtareas' : 'Colapsar subtareas'}
-          >
-            {collapsed ? <ChevronRight className="size-4" /> : <ChevronDown className="size-4" />}
-          </button>
-        ) : (
-          <span className="inline-block size-4" />
+      {/* Mobile: título + acciones en una línea, estado/prioridad/total en otra (tocable para
+          ver estimado/sin-empezar/en-progreso). La indentación y las guías no cambian acá abajo
+          — son estructurales, viven fuera de este bloque. */}
+      <div className="flex flex-col gap-1.5 border-b py-2 text-sm md:hidden">
+        <div className="flex items-center gap-2">
+          {collapseToggle}
+          <span className="flex-1 truncate">{node.title}</span>
+          <div className="flex items-center gap-0.5">{actionButtons}</div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowEffortDetail((s) => !s)}
+          className="flex items-center gap-2 pl-6 text-left"
+        >
+          <Badge className={`border-transparent ${STATUS_BADGE_CLASSES[node.status]}`}>
+            {STATUS_LABELS[node.status]}
+          </Badge>
+          <span className="inline-flex items-center gap-1 text-muted-foreground">
+            <span className={`size-2 rounded-full ${PRIORITY_DOT_CLASSES[node.priority]}`} />
+            {PRIORITY_LABELS[node.priority]}
+          </span>
+          <span className="ml-auto tabular-nums text-muted-foreground">
+            Total: <span className="font-medium text-foreground">{node.totalEffort}</span>
+          </span>
+        </button>
+        {showEffortDetail && (
+          <div className="pl-6 text-xs text-muted-foreground tabular-nums">
+            Estimado: {node.estimatedEffort === null ? 'Sin estimar' : node.estimatedEffort} ·
+            Sin empezar: {node.notStartedEffort} · En progreso: {node.inProgressEffort}
+          </div>
         )}
+      </div>
+
+      {/* Desktop: la fila de una sola línea, sin cambios respecto a antes de esta tarea. */}
+      <div className="hidden items-center gap-3 border-b py-2 text-sm md:flex md:flex-wrap">
+        {collapseToggle}
         <span className="flex-1">{node.title}</span>
         <Badge className={`border-transparent ${STATUS_BADGE_CLASSES[node.status]}`}>
           {STATUS_LABELS[node.status]}
@@ -102,36 +172,9 @@ export function TaskTreeNode({ node, depth, onChanged, onDeleted }: TaskTreeNode
         <span className="w-20 text-right tabular-nums">{node.notStartedEffort}</span>
         <span className="w-20 text-right tabular-nums">{node.inProgressEffort}</span>
         <span className="w-20 text-right tabular-nums">{node.totalEffort}</span>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Editar tarea"
-            onClick={() => setDialogMode('edit')}
-          >
-            <Pencil />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Agregar subtarea"
-            onClick={() => setDialogMode('create-child')}
-          >
-            <Plus />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-xs"
-            aria-label="Eliminar tarea"
-            onClick={() => setIsDeleteOpen(true)}
-          >
-            <Trash2 />
-          </Button>
-        </div>
+        <div className="flex items-center gap-1">{actionButtons}</div>
       </div>
+
       {hasChildren && !collapsed && (
         <div className={`${guideClasses(depth + 1)} pl-4`}>
           {node.children.map((child) => (

@@ -17,6 +17,8 @@ import {
 import { STATUS_LABELS, PRIORITY_LABELS } from '../lib/labels'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Skeleton } from '../components/ui/skeleton'
 import { TaskFormDialog } from '../components/TaskFormDialog'
 import {
   Pagination,
@@ -68,6 +70,9 @@ const ORDER_LABELS: Record<Order, string> = {
 
 const ALL_VALUE = 'all'
 
+const SKELETON_ROWS = [0, 1, 2, 3, 4]
+const SKELETON_CARDS = [0, 1, 2]
+
 export function TaskListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -105,6 +110,8 @@ export function TaskListPage() {
     return `?${next.toString()}`
   }
 
+  const showList = isLoading || (data && data.data.length > 0)
+
   return (
     <main className="mx-auto max-w-5xl p-8">
       <div className="mb-6 flex items-center justify-between">
@@ -119,9 +126,9 @@ export function TaskListPage() {
         onSuccess={refetch}
       />
 
-      <div className="mb-4 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
         <Select value={status} onValueChange={(value) => updateParams({ status: value ?? undefined })}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-auto">
             <SelectValue placeholder="Estado" />
           </SelectTrigger>
           <SelectContent>
@@ -135,7 +142,7 @@ export function TaskListPage() {
         </Select>
 
         <Select value={priority} onValueChange={(value) => updateParams({ priority: value ?? undefined })}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-auto">
             <SelectValue placeholder="Prioridad" />
           </SelectTrigger>
           <SelectContent>
@@ -149,7 +156,7 @@ export function TaskListPage() {
         </Select>
 
         <Select value={sortBy} onValueChange={(value) => updateParams({ sortBy: value ?? undefined })}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-auto">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>
@@ -162,7 +169,7 @@ export function TaskListPage() {
         </Select>
 
         <Select value={order} onValueChange={(value) => updateParams({ order: value ?? undefined })}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full sm:w-auto">
             <SelectValue placeholder="Orden" />
           </SelectTrigger>
           <SelectContent>
@@ -177,69 +184,148 @@ export function TaskListPage() {
 
       {error && <p className="mb-4 text-sm text-destructive">{error}</p>}
 
-      {!error && (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Título</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Prioridad</TableHead>
-              <TableHead className="text-right">Sin empezar</TableHead>
-              <TableHead className="text-right">En progreso</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  Cargando…
-                </TableCell>
-              </TableRow>
-            )}
-            {!isLoading && data?.data.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  No hay tareas.
-                </TableCell>
-              </TableRow>
-            )}
+      {!error && !isLoading && data?.data.length === 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">No hay tareas.</p>
+      )}
+
+      {!error && showList && (
+        <>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Título</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Prioridad</TableHead>
+                  <TableHead className="text-right">Sin empezar</TableHead>
+                  <TableHead className="text-right">En progreso</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading &&
+                  SKELETON_ROWS.map((i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <Skeleton className="h-4 w-40" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      </TableCell>
+                      <TableCell>
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="ml-auto h-4 w-8" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="ml-auto h-4 w-8" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Skeleton className="ml-auto h-4 w-8" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                {!isLoading &&
+                  data?.data.map((task: Task) => (
+                    <TableRow
+                      key={task.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/tasks/${task.id}`)}
+                    >
+                      <TableCell>{task.title}</TableCell>
+                      <TableCell>
+                        <Badge className={`border-transparent ${STATUS_BADGE_CLASSES[task.status]}`}>
+                          {STATUS_LABELS[task.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                          <span
+                            className={`size-2 rounded-full ${PRIORITY_DOT_CLASSES[task.priority]}`}
+                          />
+                          {PRIORITY_LABELS[task.priority]}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {task.notStartedEffort}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {task.inProgressEffort}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{task.totalEffort}</TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-col gap-3 md:hidden">
+            {isLoading &&
+              SKELETON_CARDS.map((i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between gap-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                    </div>
+                    <Skeleton className="h-3 w-20" />
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-2">
+                    {[0, 1, 2].map((j) => (
+                      <div key={j}>
+                        <Skeleton className="h-3 w-12" />
+                        <Skeleton className="mt-1 h-4 w-8" />
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
             {!isLoading &&
               data?.data.map((task: Task) => (
-                <TableRow
+                <Card
                   key={task.id}
                   className="cursor-pointer"
                   onClick={() => navigate(`/tasks/${task.id}`)}
                 >
-                  <TableCell>{task.title}</TableCell>
-                  <TableCell>
-                    <Badge className={`border-transparent ${STATUS_BADGE_CLASSES[task.status]}`}>
-                      {STATUS_LABELS[task.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                      <span
-                        className={`size-2 rounded-full ${PRIORITY_DOT_CLASSES[task.priority]}`}
-                      />
-                      {PRIORITY_LABELS[task.priority]}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {task.notStartedEffort}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {task.inProgressEffort}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{task.totalEffort}</TableCell>
-                </TableRow>
+                  <CardHeader>
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle>{task.title}</CardTitle>
+                      <Badge className={`border-transparent ${STATUS_BADGE_CLASSES[task.status]}`}>
+                        {STATUS_LABELS[task.status]}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className={`size-2 rounded-full ${PRIORITY_DOT_CLASSES[task.priority]}`}
+                        />
+                        {PRIORITY_LABELS[task.priority]}
+                      </span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-3 gap-2 text-sm">
+                    <div>
+                      <div className="text-xs text-muted-foreground">Sin empezar</div>
+                      <div className="tabular-nums">{task.notStartedEffort}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">En progreso</div>
+                      <div className="tabular-nums">{task.inProgressEffort}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">Total</div>
+                      <div className="tabular-nums">{task.totalEffort}</div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
-          </TableBody>
-        </Table>
+          </div>
+        </>
       )}
 
       {data && data.totalPages > 0 && (
-        <div className="mt-6 flex items-center justify-between">
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Página {data.page} de {data.totalPages} — {data.total} tareas
           </p>
