@@ -1,4 +1,4 @@
-# task-system
+# Task-system
 
 App de gestión de tareas para un equipo de dev: CRUD con subtareas anidadas de profundidad
 arbitraria y agregación de esfuerzo sobre todo el árbol.
@@ -45,6 +45,13 @@ propio `CHECK`. `estimated_effort NUMERIC(10,2) NULL CHECK (estimated_effort >= 
 **Gotcha:** `pg` devuelve `NUMERIC` como **string**. Se registra un type parser una sola vez en
 `db/pool.ts` para que llegue como `number` — si no, las agregaciones concatenan en vez de sumar.
 
+**Gotcha:** `COUNT(*)` devuelve `bigint`, y `pg` lo entrega como **string** igual que `NUMERIC`.
+Sin convertir, la respuesta paginada sale con `total: "0"` y `totalPages` se calcula sobre un
+string. La conversión va explícita en el repositorio con `Number(...)`, no con un type parser
+global como el de `NUMERIC`: `NUMERIC(10,2)` está acotado por el schema y entra siempre en el
+rango seguro de JavaScript, así que ahí el parser global es seguro; `bigint` no tiene esa cota y
+un parser global se aplicaría a cualquier columna `bigint` futura, incluida una que desborde.
+
 ## Agregaciones
 
 `WITH RECURSIVE` trae el subárbol plano desde el repositorio; una función pura en
@@ -61,6 +68,12 @@ Esfuerzo `null` cuenta como 0 en las sumas, pero se muestra distinto de `0` en l
 `GET /tasks?page=&limit=&sortBy=&order=&status=&priority=` — devuelve **solo tareas raíz**
 (`parent_id IS NULL`), paginadas. `total`/`totalPages` cuentan raíces. Cada fila trae el
 esfuerzo agregado de su subárbol completo.
+
+Ese agregado se resuelve con el mismo `WITH RECURSIVE` que usa `GET /tasks/:id`, sembrado con los
+ids de la página: el término base filtra por `id = ANY($1)`. No hay una query por raíz — eso es
+N+1, 20 raíces son 21 viajes a la base. Y `ANY($1)` es un placeholder único que recibe un
+arreglo, mientras que `IN` obligaría a construir la lista de placeholders dinámicamente según la
+cantidad de ids, o sea armar el texto del SQL con strings, que "Reglas duras" prohíbe.
 
 `status` y `priority` filtran **solo el nivel raíz** — restricción deliberada: filtran qué
 raíces aparecen, no qué nodos se ven dentro de un subárbol. Paginar sobre un árbol filtrado no
