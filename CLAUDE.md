@@ -84,6 +84,7 @@ tiene respuesta única.
 
 Respuesta paginada: `{ data, page, limit, total, totalPages }`. Los schemas de `zod` en
 `routes/` son la fuente de verdad de los params — no se duplican en prosa acá.
+Default: `page` en `1`, `limit` en `20`.
 
 ### Ordenamiento
 
@@ -102,7 +103,9 @@ determinista cuando hay `created_at` repetidos.
 ## Convenciones de código
 
 ESM (`"type": "module"`), imports relativos con extensión `.js`. Sin default exports. Errores
-como `AppError` tipado — nunca `throw new Error(string)` suelto.
+como `AppError` tipado — nunca `throw new Error(string)` suelto. Esa regla es para errores de
+request, que necesitan mapearse a un status HTTP. Un error de configuración (por ejemplo una
+variable de entorno faltante) falla al arranque con un `Error` común: no hay request en curso.
 
 ## Dirección de diseño
 
