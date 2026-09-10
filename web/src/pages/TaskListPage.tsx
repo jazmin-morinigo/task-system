@@ -14,7 +14,7 @@ import {
   type TaskPriority,
   type TaskStatus,
 } from '../lib/types'
-import { STATUS_LABELS, PRIORITY_LABELS } from '../lib/labels'
+import { STATUS_LABELS, PRIORITY_LABELS, STATUS_BADGE_CLASSES } from '../lib/labels'
 import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -42,13 +42,6 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table'
-
-const STATUS_BADGE_CLASSES: Record<TaskStatus, string> = {
-  TODO: 'bg-status-todo text-status-todo-foreground',
-  IN_PROGRESS: 'bg-status-in-progress text-status-in-progress-foreground',
-  IN_REVIEW: 'bg-status-in-review text-status-in-review-foreground',
-  DONE: 'bg-status-done text-status-done-foreground',
-}
 
 const PRIORITY_DOT_CLASSES: Record<TaskPriority, string> = {
   LOW: 'bg-priority-low',
@@ -113,7 +106,7 @@ export function TaskListPage() {
   const showList = isLoading || (data && data.data.length > 0)
 
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto max-w-6xl p-4 md:p-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Tareas</h1>
         <Button onClick={() => setIsCreateOpen(true)}>+ Nueva tarea</Button>
@@ -126,10 +119,14 @@ export function TaskListPage() {
         onSuccess={refetch}
       />
 
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+      <div className="mb-4 grid grid-cols-2 gap-2 rounded-xl border border-filter-panel-border bg-filter-panel p-3 sm:flex sm:flex-row sm:flex-wrap sm:gap-3">
         <Select value={status} onValueChange={(value) => updateParams({ status: value ?? undefined })}>
-          <SelectTrigger className="w-full sm:w-auto">
-            <SelectValue placeholder="Estado" />
+          <SelectTrigger className="w-full min-w-0 sm:w-auto">
+            <SelectValue placeholder="Estado">
+              {(value: string) =>
+                value === ALL_VALUE ? 'Todos los estados' : STATUS_LABELS[value as TaskStatus]
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_VALUE}>Todos los estados</SelectItem>
@@ -142,8 +139,14 @@ export function TaskListPage() {
         </Select>
 
         <Select value={priority} onValueChange={(value) => updateParams({ priority: value ?? undefined })}>
-          <SelectTrigger className="w-full sm:w-auto">
-            <SelectValue placeholder="Prioridad" />
+          <SelectTrigger className="w-full min-w-0 sm:w-auto">
+            <SelectValue placeholder="Prioridad">
+              {(value: string) =>
+                value === ALL_VALUE
+                  ? 'Todas las prioridades'
+                  : PRIORITY_LABELS[value as TaskPriority]
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_VALUE}>Todas las prioridades</SelectItem>
@@ -156,8 +159,10 @@ export function TaskListPage() {
         </Select>
 
         <Select value={sortBy} onValueChange={(value) => updateParams({ sortBy: value ?? undefined })}>
-          <SelectTrigger className="w-full sm:w-auto">
-            <SelectValue placeholder="Ordenar por" />
+          <SelectTrigger className="w-full min-w-0 sm:w-auto">
+            <SelectValue placeholder="Ordenar por">
+              {(value: string) => SORT_BY_LABELS[value as SortBy]}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {SORT_BY_VALUES.map((value) => (
@@ -169,8 +174,10 @@ export function TaskListPage() {
         </Select>
 
         <Select value={order} onValueChange={(value) => updateParams({ order: value ?? undefined })}>
-          <SelectTrigger className="w-full sm:w-auto">
-            <SelectValue placeholder="Orden" />
+          <SelectTrigger className="w-full min-w-0 sm:w-auto">
+            <SelectValue placeholder="Orden">
+              {(value: string) => ORDER_LABELS[value as Order]}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {ORDER_VALUES.map((value) => (

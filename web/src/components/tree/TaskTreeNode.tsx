@@ -14,15 +14,8 @@ import {
 } from '../ui/alert-dialog'
 import { TaskFormDialog } from '../TaskFormDialog'
 import { deleteTask } from '../../lib/api'
-import { STATUS_LABELS, PRIORITY_LABELS } from '../../lib/labels'
-import type { TaskNode, TaskPriority, TaskStatus } from '../../lib/types'
-
-const STATUS_BADGE_CLASSES: Record<TaskStatus, string> = {
-  TODO: 'bg-status-todo text-status-todo-foreground',
-  IN_PROGRESS: 'bg-status-in-progress text-status-in-progress-foreground',
-  IN_REVIEW: 'bg-status-in-review text-status-in-review-foreground',
-  DONE: 'bg-status-done text-status-done-foreground',
-}
+import { STATUS_LABELS, PRIORITY_LABELS, STATUS_BADGE_CLASSES } from '../../lib/labels'
+import type { TaskNode, TaskPriority } from '../../lib/types'
 
 const PRIORITY_DOT_CLASSES: Record<TaskPriority, string> = {
   LOW: 'bg-priority-low',

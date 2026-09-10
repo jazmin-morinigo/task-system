@@ -14,3 +14,11 @@ export const PRIORITY_LABELS: Record<TaskPriority, string> = {
   MEDIUM: 'Media',
   HIGH: 'Alta',
 }
+
+// Antes duplicado en TaskListPage.tsx y TaskTreeNode.tsx — AppHeader.tsx lo necesita también.
+export const STATUS_BADGE_CLASSES: Record<TaskStatus, string> = {
+  TODO: 'bg-status-todo text-status-todo-foreground',
+  IN_PROGRESS: 'bg-status-in-progress text-status-in-progress-foreground',
+  IN_REVIEW: 'bg-status-in-review text-status-in-review-foreground',
+  DONE: 'bg-status-done text-status-done-foreground',
+}

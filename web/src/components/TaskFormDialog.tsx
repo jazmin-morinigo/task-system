@@ -136,7 +136,7 @@ export function TaskFormDialog({
               <Label htmlFor="task-status">Estado</Label>
               <Select value={status} onValueChange={(value) => value && setStatus(value as TaskStatus)}>
                 <SelectTrigger id="task-status" className="w-full">
-                  <SelectValue />
+                  <SelectValue>{(value: TaskStatus) => STATUS_LABELS[value]}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {TASK_STATUSES.map((value) => (
@@ -155,7 +155,7 @@ export function TaskFormDialog({
                 onValueChange={(value) => value && setPriority(value as TaskPriority)}
               >
                 <SelectTrigger id="task-priority" className="w-full">
-                  <SelectValue />
+                  <SelectValue>{(value: TaskPriority) => PRIORITY_LABELS[value]}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {TASK_PRIORITIES.map((value) => (
