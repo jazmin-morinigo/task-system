@@ -12,6 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       # Solo corre con el volumen vacío. Para reaplicar el schema: docker compose down -v
       - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
     healthcheck:
       # -h fuerza TCP: durante initdb el servidor temporal escucha solo en el socket unix, así
       # que sin el -h el check puede dar healthy antes de que schema.sql se haya aplicado.
