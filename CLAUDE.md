@@ -125,8 +125,10 @@ variable de entorno faltante) falla al arranque con un `Error` común: no hay re
 ## Dirección de diseño
 
 - Una sola escala de espaciado, base 4: `4·8·12·16·24·32·48`. Nada de valores arbitrarios.
-- Manrope, dos pesos y nada más: 400 cuerpo, 600 títulos/números/labels. Números de esfuerzo
-  con `tabular-nums`.
+- Geist Variable, dos pesos y nada más: 400 cuerpo, 600 títulos/números/labels. Números de
+  esfuerzo con `tabular-nums`. Se eligió al inicializar shadcn/ui: el CLI actual usa Base UI +
+  preset Nova por default, que trae Geist — se mantuvo en vez de forzar Manrope por ser
+  coherente con el tono de herramienta para developers del proyecto.
 - Estados vacíos y de carga siempre presentes: skeletons con la forma real, nunca pantalla en
   blanco.
 - El árbol de subtareas es el foco del esfuerzo de diseño: guía de indentación por nivel,
@@ -149,7 +151,8 @@ esfuerzo `null`, árbol de 3+ niveles, mezcla de los 4 estados, hijo `DONE` bajo
 `/docker-entrypoint-initdb.d/` solo corre con volumen vacío — para reaplicar `schema.sql`,
 `docker compose down -v`.
 
-- Base `node:22-alpine`, consistente con `engines >=22`. Sin dependencias nativas.
+- Base `node:24-alpine` en todas las etapas del Dockerfile, por encima del mínimo declarado en
+  `engines >=22`. Sin dependencias nativas.
 - Puertos: `3000:3000` para el API, `5433:5432` para Postgres. El `5432` del host está ocupado
   por una instalación local de Windows.
 - `DATABASE_URL` tiene dos formas. Desde el host en desarrollo apunta a `localhost:5433` y vive
@@ -164,9 +167,13 @@ esfuerzo `null`, árbol de 3+ niveles, mezcla de los 4 estados, hijo `DONE` bajo
 **Delete:** `ON DELETE CASCADE` borra el subárbol completo en silencio. El frontend confirma
 mostrando cuántas subtareas se van a borrar antes de ejecutar.
 
-**Pendiente (Bloque 4):** al pasar el Dockerfile a multi-stage, dejar una etapa nombrada que
-conserve las devDependencies para correr Vitest dentro de Docker. La imagen final las descarta y
-el README necesita un comando de tests que funcione sin Node instalado en el host.
+**Multi-stage (Bloque 4, resuelto):** el Dockerfile tiene cinco etapas — `web-build` compila el
+frontend, `api-deps` instala las dependencias del API con devDependencies, `api-build` cuelga de
+ahí y corre `tsc`, `test` también cuelga de `api-deps` y conserva las devDependencies para correr
+Vitest dentro de Docker (`docker build --target test`), y `production` es la última etapa: solo
+dependencias de producción (`npm ci --omit=dev`), el JS compilado y el estático del frontend.
+Pendiente para Bloque 5: agregar al README el comando de tests que funcione sin Node instalado
+en el host.
 
 ## Git
 
