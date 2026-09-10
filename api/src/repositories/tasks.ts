@@ -125,3 +125,76 @@ export async function findById(id: string) {
 
   return rows[0] ?? null;
 }
+
+export interface UpdateTaskFields {
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  estimatedEffort?: number;
+}
+
+export async function update(id: string, fields: UpdateTaskFields) {
+  const assignments: string[] = [];
+  const params: unknown[] = [];
+
+  if (fields.title !== undefined) {
+    params.push(fields.title);
+    assignments.push(`title = $${params.length}`);
+  }
+
+  if (fields.description !== undefined) {
+    params.push(fields.description);
+    assignments.push(`description = $${params.length}`);
+  }
+
+  if (fields.status !== undefined) {
+    params.push(fields.status);
+    assignments.push(`status = $${params.length}`);
+  }
+
+  if (fields.priority !== undefined) {
+    params.push(fields.priority);
+    assignments.push(`priority = $${params.length}`);
+  }
+
+  if (fields.estimatedEffort !== undefined) {
+    params.push(fields.estimatedEffort);
+    assignments.push(`estimated_effort = $${params.length}`);
+  }
+
+  // updated_at se pisa acá explícito, no con un trigger: hay un solo punto de escritura (este
+  // UPDATE), un trigger sería lógica invisible mirando solo schema.sql, y agregar uno a
+  // schema.sql exige `docker compose down -v` para que initdb lo vuelva a aplicar.
+  assignments.push('updated_at = now()');
+
+  params.push(id);
+  const idIdx = params.length;
+
+  const { rows } = await pool.query(
+    `UPDATE tasks
+     SET ${assignments.join(', ')}
+     WHERE id = $${idIdx}
+     RETURNING
+       id,
+       parent_id AS "parentId",
+       title,
+       description,
+       status,
+       priority,
+       estimated_effort AS "estimatedEffort",
+       created_at AS "createdAt",
+       updated_at AS "updatedAt"`,
+    params,
+  );
+
+  return rows[0] ?? null;
+}
+
+// El ON DELETE CASCADE de schema.sql es quien borra el subárbol completo — este código no
+// recorre hijos, es responsabilidad de la base, no del código.
+export async function remove(id: string): Promise<boolean> {
+  const { rowCount } = await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+
+  return (rowCount ?? 0) > 0;
+}

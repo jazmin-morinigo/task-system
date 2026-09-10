@@ -1,4 +1,4 @@
-import { countRoots, create, findAllRoots, findById } from '../repositories/tasks.js';
+import { countRoots, create, findAllRoots, findById, remove, update } from '../repositories/tasks.js';
 import { AppError } from '../lib/errors.js';
 import type { TaskPriority, TaskStatus } from '../lib/taskTypes.js';
 import { buildOrderBy, type Order, type SortBy } from '../lib/query.js';
@@ -85,4 +85,32 @@ export async function getTaskById(id: string) {
   }
 
   return task;
+}
+
+// Sin parentId — ni siquiera está en el tipo: zod ya lo bloqueó en la ruta antes de que un
+// UpdateTaskInput llegue a existir. parentId no es modificable acá (ver routes/tasks.ts).
+export interface UpdateTaskInput {
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+  estimatedEffort?: number;
+}
+
+export async function updateTask(id: string, input: UpdateTaskInput) {
+  const task = await update(id, input);
+
+  if (!task) {
+    throw new AppError('La tarea no existe.', 404);
+  }
+
+  return task;
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const deleted = await remove(id);
+
+  if (!deleted) {
+    throw new AppError('La tarea no existe.', 404);
+  }
 }
