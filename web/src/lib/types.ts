@@ -41,3 +41,10 @@ export interface TaskListResponse {
   total: number
   totalPages: number
 }
+
+// GET /tasks/:id devuelve este nodo directamente, sin envoltorio. notStartedEffort/
+// inProgressEffort/totalEffort están calculados sobre el subárbol propio de CADA nodo, no
+// heredados de la raíz — un hijo profundo tiene sus propios agregados.
+export interface TaskNode extends Task {
+  children: TaskNode[]
+}

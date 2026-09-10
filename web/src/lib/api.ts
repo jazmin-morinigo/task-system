@@ -1,4 +1,4 @@
-import type { TaskListResponse } from './types'
+import type { TaskListResponse, TaskNode } from './types'
 
 export async function fetchTasks(
   params: URLSearchParams,
@@ -10,6 +10,17 @@ export async function fetchTasks(
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     throw new Error(body?.error ?? 'Error al cargar las tareas')
+  }
+
+  return res.json()
+}
+
+export async function fetchTaskTree(id: string, signal?: AbortSignal): Promise<TaskNode> {
+  const res = await fetch(`/tasks/${id}`, { signal })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error ?? 'Error al cargar la tarea')
   }
 
   return res.json()
