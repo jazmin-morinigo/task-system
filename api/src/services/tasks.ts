@@ -1,18 +1,34 @@
 import { countRoots, create, findAllRoots, findById } from '../repositories/tasks.js';
 import { AppError } from '../lib/errors.js';
 import type { TaskPriority, TaskStatus } from '../lib/taskTypes.js';
+import { buildOrderBy, type Order, type SortBy } from '../lib/query.js';
 
-// Placeholder hasta que exista el schema de zod en routes/ (CLAUDE.md, Contrato de la API):
-// esa etapa reutiliza estas constantes en vez de repetir los números.
+// Defaults de page/limit, y el techo de limit al lado — la ruta los usa como default/máximo del
+// schema de zod en vez de repetir los números.
 export const DEFAULT_PAGE = 1;
 export const DEFAULT_LIMIT = 20;
+export const MAX_LIMIT = 100;
 
-export async function listRootTasks() {
-  const page = DEFAULT_PAGE;
-  const limit = DEFAULT_LIMIT;
+export interface ListRootTasksParams {
+  page: number;
+  limit: number;
+  sortBy: SortBy;
+  order: Order;
+  status?: TaskStatus;
+  priority?: TaskPriority;
+}
+
+export async function listRootTasks(params: ListRootTasksParams) {
+  const { page, limit, sortBy, order, status, priority } = params;
   const offset = (page - 1) * limit;
+  const orderBy = buildOrderBy(sortBy, order);
 
-  const [data, total] = await Promise.all([findAllRoots(limit, offset), countRoots()]);
+  const [data, total] = await Promise.all([
+    findAllRoots({ limit, offset, orderBy, status, priority }),
+    // Mismos status/priority que findAllRoots: el total cuenta las raíces que pasan el filtro,
+    // no todas.
+    countRoots({ status, priority }),
+  ]);
 
   return {
     data,
@@ -59,4 +75,14 @@ export async function createTask(input: CreateTaskInput) {
     estimatedEffort: input.estimatedEffort ?? null,
     parentId: input.parentId ?? null,
   });
+}
+
+export async function getTaskById(id: string) {
+  const task = await findById(id);
+
+  if (!task) {
+    throw new AppError('La tarea no existe.', 404);
+  }
+
+  return task;
 }
