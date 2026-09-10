@@ -32,12 +32,31 @@ export async function listRootTasks(params: ListRootTasksParams) {
   const offset = (page - 1) * limit;
   const orderBy = buildOrderBy(sortBy, order);
 
-  const [data, total] = await Promise.all([
+  const [roots, total] = await Promise.all([
     findAllRoots({ limit, offset, orderBy, status, priority }),
     // Mismos status/priority que findAllRoots: el total cuenta las raíces que pasan el filtro,
     // no todas.
     countRoots({ status, priority }),
   ]);
+
+  // Este arreglo ES el orden de la página: lo definió el ORDER BY de findAllRoots. findSubtrees
+  // siembra con ANY, que no respeta el orden del arreglo, así que el bosque que vuelve no sirve
+  // para ordenar — se indexa por id y se recorre `ids`, no el bosque.
+  const ids = roots.map((root) => root.id);
+
+  // Página vacía: sin viaje a la base para un CTE que no devolvería nada.
+  const forest = ids.length > 0 ? buildForest(await findSubtrees(ids)) : [];
+  const treesById = new Map(forest.map((tree) => [tree.id, tree]));
+
+  // Cada fila lleva el esfuerzo agregado de su subárbol, sin `children`: el subárbol completo es
+  // de GET /tasks/:id (CLAUDE.md, Contrato de la API). Una raíz que no está en el bosque se borró
+  // entre findAllRoots y findSubtrees — no corren en una transacción — y se omite: ya no existe.
+  const data = ids.flatMap((id) => {
+    const tree = treesById.get(id);
+    if (!tree) return [];
+    const { children: _children, ...withEffort } = tree;
+    return [withEffort];
+  });
 
   return {
     data,
