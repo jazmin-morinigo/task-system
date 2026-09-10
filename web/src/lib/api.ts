@@ -55,3 +55,12 @@ export async function updateTask(id: string, input: UpdateTaskInput): Promise<Ta
 
   return res.json()
 }
+
+export async function deleteTask(id: string, signal?: AbortSignal): Promise<void> {
+  const res = await fetch(`/tasks/${id}`, { method: 'DELETE', signal })
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error ?? 'Error al eliminar la tarea')
+  }
+}

@@ -9,6 +9,14 @@ export function TaskDetailPage() {
   const { data, isLoading, error, refetch } = useTaskTree(id)
   const navigate = useNavigate()
 
+  function handleDeleted(deletedId: string) {
+    if (deletedId === id) {
+      navigate('/')
+    } else {
+      refetch()
+    }
+  }
+
   return (
     <main className="mx-auto max-w-5xl p-8">
       <Button
@@ -40,9 +48,10 @@ export function TaskDetailPage() {
             <span className="inline-flex gap-1">
               <span className="inline-block size-6" />
               <span className="inline-block size-6" />
+              <span className="inline-block size-6" />
             </span>
           </div>
-          <TaskTreeNode node={data} depth={0} onChanged={refetch} />
+          <TaskTreeNode node={data} depth={0} onChanged={refetch} onDeleted={handleDeleted} />
         </div>
       )}
     </main>

@@ -1,8 +1,19 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Pencil, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog'
 import { TaskFormDialog } from '../TaskFormDialog'
+import { deleteTask } from '../../lib/api'
 import { STATUS_LABELS, PRIORITY_LABELS } from '../../lib/labels'
 import type { TaskNode, TaskPriority, TaskStatus } from '../../lib/types'
 
@@ -27,16 +38,40 @@ function guideClasses(childDepth: number): string {
   return 'border-l border-border/35'
 }
 
+// No cuenta al propio nodo, solo sus descendientes — para el mensaje de confirmación de borrado.
+function countDescendants(node: TaskNode): number {
+  return node.children.reduce((sum, child) => sum + 1 + countDescendants(child), 0)
+}
+
 interface TaskTreeNodeProps {
   node: TaskNode
   depth: number
   onChanged: () => void
+  onDeleted: (deletedId: string) => void
 }
 
-export function TaskTreeNode({ node, depth, onChanged }: TaskTreeNodeProps) {
+export function TaskTreeNode({ node, depth, onChanged, onDeleted }: TaskTreeNodeProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [dialogMode, setDialogMode] = useState<'edit' | 'create-child' | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const hasChildren = node.children.length > 0
+  const descendantCount = countDescendants(node)
+
+  async function handleDelete() {
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await deleteTask(node.id)
+      setIsDeleteOpen(false)
+      onDeleted(node.id)
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Error al eliminar la tarea')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div>
@@ -86,12 +121,27 @@ export function TaskTreeNode({ node, depth, onChanged }: TaskTreeNodeProps) {
           >
             <Plus />
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Eliminar tarea"
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            <Trash2 />
+          </Button>
         </div>
       </div>
       {hasChildren && !collapsed && (
         <div className={`${guideClasses(depth + 1)} pl-4`}>
           {node.children.map((child) => (
-            <TaskTreeNode key={child.id} node={child} depth={depth + 1} onChanged={onChanged} />
+            <TaskTreeNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              onChanged={onChanged}
+              onDeleted={onDeleted}
+            />
           ))}
         </div>
       )}
@@ -110,6 +160,26 @@ export function TaskTreeNode({ node, depth, onChanged }: TaskTreeNodeProps) {
         parentId={node.id}
         onSuccess={onChanged}
       />
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar "{node.title}"</AlertDialogTitle>
+            <AlertDialogDescription>
+              {descendantCount > 0
+                ? `Esto también va a eliminar ${descendantCount} subtarea${descendantCount === 1 ? '' : 's'}. Esta acción no se puede deshacer.`
+                : 'Esta acción no se puede deshacer.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Eliminando…' : 'Eliminar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
