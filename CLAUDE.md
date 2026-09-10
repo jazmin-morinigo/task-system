@@ -42,8 +42,16 @@ Tabla única `tasks`, `parent_id` autorreferencial con `ON DELETE CASCADE`.
 `status VARCHAR CHECK (status IN ('TODO','IN_PROGRESS','IN_REVIEW','DONE'))`, `priority` con su
 propio `CHECK`. `estimated_effort NUMERIC(10,2) NULL CHECK (estimated_effort >= 0)`.
 
+**Invariante:** `parentId` es inmutable después de crear: el `PATCH` lo rechaza con `z.never()`.
+Esto es lo que garantiza que la jerarquía no tenga ciclos y que el `WITH RECURSIVE` siempre
+termine. No agregar una operación de mover una tarea de padre sin validar antes que el nuevo
+padre no esté en el subárbol de la tarea que se mueve.
+
 **Gotcha:** `pg` devuelve `NUMERIC` como **string**. Se registra un type parser una sola vez en
-`db/pool.ts` para que llegue como `number` — si no, las agregaciones concatenan en vez de sumar.
+`db/pool.ts` para que llegue como `number`. Sin él, las sumas darían bien igual — la agregación
+multiplica por 100 para pasar a centésimos, y el `*` fuerza la conversión del string —, pero
+`estimatedEffort` viajaría en el JSON como string (`"3.00"`) en vez de número (`3`). Los tests
+unitarios no lo detectarían: arman las filas a mano con números.
 
 **Gotcha:** `COUNT(*)` devuelve `bigint`, y `pg` lo entrega como **string** igual que `NUMERIC`.
 Sin convertir, la respuesta paginada sale con `total: "0"` y `totalPages` se calcula sobre un
