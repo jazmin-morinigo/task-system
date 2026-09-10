@@ -1,20 +1,10 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronRight, Pencil, Plus } from 'lucide-react'
 import { Badge } from '../ui/badge'
+import { Button } from '../ui/button'
+import { TaskFormDialog } from '../TaskFormDialog'
+import { STATUS_LABELS, PRIORITY_LABELS } from '../../lib/labels'
 import type { TaskNode, TaskPriority, TaskStatus } from '../../lib/types'
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  TODO: 'Por hacer',
-  IN_PROGRESS: 'En progreso',
-  IN_REVIEW: 'En revisión',
-  DONE: 'Hecha',
-}
-
-const PRIORITY_LABELS: Record<TaskPriority, string> = {
-  LOW: 'Baja',
-  MEDIUM: 'Media',
-  HIGH: 'Alta',
-}
 
 const STATUS_BADGE_CLASSES: Record<TaskStatus, string> = {
   TODO: 'bg-status-todo text-status-todo-foreground',
@@ -40,10 +30,12 @@ function guideClasses(childDepth: number): string {
 interface TaskTreeNodeProps {
   node: TaskNode
   depth: number
+  onChanged: () => void
 }
 
-export function TaskTreeNode({ node, depth }: TaskTreeNodeProps) {
+export function TaskTreeNode({ node, depth, onChanged }: TaskTreeNodeProps) {
   const [collapsed, setCollapsed] = useState(false)
+  const [dialogMode, setDialogMode] = useState<'edit' | 'create-child' | null>(null)
   const hasChildren = node.children.length > 0
 
   return (
@@ -75,14 +67,49 @@ export function TaskTreeNode({ node, depth }: TaskTreeNodeProps) {
         <span className="w-20 text-right tabular-nums">{node.notStartedEffort}</span>
         <span className="w-20 text-right tabular-nums">{node.inProgressEffort}</span>
         <span className="w-20 text-right tabular-nums">{node.totalEffort}</span>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Editar tarea"
+            onClick={() => setDialogMode('edit')}
+          >
+            <Pencil />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            aria-label="Agregar subtarea"
+            onClick={() => setDialogMode('create-child')}
+          >
+            <Plus />
+          </Button>
+        </div>
       </div>
       {hasChildren && !collapsed && (
         <div className={`${guideClasses(depth + 1)} pl-4`}>
           {node.children.map((child) => (
-            <TaskTreeNode key={child.id} node={child} depth={depth + 1} />
+            <TaskTreeNode key={child.id} node={child} depth={depth + 1} onChanged={onChanged} />
           ))}
         </div>
       )}
+
+      <TaskFormDialog
+        open={dialogMode === 'edit'}
+        onOpenChange={(open) => setDialogMode(open ? 'edit' : null)}
+        mode="edit"
+        task={node}
+        onSuccess={onChanged}
+      />
+      <TaskFormDialog
+        open={dialogMode === 'create-child'}
+        onOpenChange={(open) => setDialogMode(open ? 'create-child' : null)}
+        mode="create"
+        parentId={node.id}
+        onSuccess={onChanged}
+      />
     </div>
   )
 }

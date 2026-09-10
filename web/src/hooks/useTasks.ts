@@ -6,14 +6,16 @@ interface UseTasksResult {
   data: TaskListResponse | null
   isLoading: boolean
   error: string | null
+  refetch: () => void
 }
 
 export function useTasks(params: URLSearchParams): UseTasksResult {
-  const [result, setResult] = useState<UseTasksResult>({
+  const [result, setResult] = useState<Omit<UseTasksResult, 'refetch'>>({
     data: null,
     isLoading: true,
     error: null,
   })
+  const [refreshIndex, setRefreshIndex] = useState(0)
   const query = params.toString()
 
   useEffect(() => {
@@ -29,7 +31,11 @@ export function useTasks(params: URLSearchParams): UseTasksResult {
       })
 
     return () => controller.abort()
-  }, [query])
+  }, [query, refreshIndex])
 
-  return result
+  function refetch() {
+    setRefreshIndex((i) => i + 1)
+  }
+
+  return { ...result, refetch }
 }

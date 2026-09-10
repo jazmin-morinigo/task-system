@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTasks } from '../hooks/useTasks'
 import {
@@ -13,7 +14,10 @@ import {
   type TaskPriority,
   type TaskStatus,
 } from '../lib/types'
+import { STATUS_LABELS, PRIORITY_LABELS } from '../lib/labels'
 import { Badge } from '../components/ui/badge'
+import { Button } from '../components/ui/button'
+import { TaskFormDialog } from '../components/TaskFormDialog'
 import {
   Pagination,
   PaginationContent,
@@ -36,19 +40,6 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui/table'
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  TODO: 'Por hacer',
-  IN_PROGRESS: 'En progreso',
-  IN_REVIEW: 'En revisión',
-  DONE: 'Hecha',
-}
-
-const PRIORITY_LABELS: Record<TaskPriority, string> = {
-  LOW: 'Baja',
-  MEDIUM: 'Media',
-  HIGH: 'Alta',
-}
 
 const STATUS_BADGE_CLASSES: Record<TaskStatus, string> = {
   TODO: 'bg-status-todo text-status-todo-foreground',
@@ -80,7 +71,8 @@ const ALL_VALUE = 'all'
 export function TaskListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { data, isLoading, error } = useTasks(searchParams)
+  const { data, isLoading, error, refetch } = useTasks(searchParams)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
 
   const page = Number(searchParams.get('page') ?? '1')
   const sortBy = (searchParams.get('sortBy') as SortBy | null) ?? DEFAULT_SORT_BY
@@ -115,7 +107,17 @@ export function TaskListPage() {
 
   return (
     <main className="mx-auto max-w-5xl p-8">
-      <h1 className="mb-6 text-xl font-semibold">Tareas</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Tareas</h1>
+        <Button onClick={() => setIsCreateOpen(true)}>+ Nueva tarea</Button>
+      </div>
+
+      <TaskFormDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        mode="create"
+        onSuccess={refetch}
+      />
 
       <div className="mb-4 flex flex-wrap gap-3">
         <Select value={status} onValueChange={(value) => updateParams({ status: value ?? undefined })}>

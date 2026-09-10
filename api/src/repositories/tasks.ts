@@ -168,7 +168,7 @@ export interface UpdateTaskFields {
   description?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
-  estimatedEffort?: number;
+  estimatedEffort?: number | null;
 }
 
 export async function update(id: string, fields: UpdateTaskFields) {

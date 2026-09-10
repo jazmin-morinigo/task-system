@@ -48,3 +48,25 @@ export interface TaskListResponse {
 export interface TaskNode extends Task {
   children: TaskNode[]
 }
+
+// POST /tasks (api/src/routes/tasks.ts, createTaskSchema). estimatedEffort no acepta null acá
+// — vacío en el form significa omitir el campo, no mandarlo en null.
+export interface CreateTaskInput {
+  title: string
+  description?: string
+  status?: TaskStatus
+  priority?: TaskPriority
+  estimatedEffort?: number
+  parentId?: string
+}
+
+// PATCH /tasks/:id (updateTaskSchema). parentId no existe acá — es z.never() en el backend, ni
+// siquiera se manda. estimatedEffort SÍ acepta null (a diferencia de create) para poder borrar
+// una estimación ya puesta — se manda siempre en modo edición, nunca se omite.
+export interface UpdateTaskInput {
+  title?: string
+  description?: string
+  status?: TaskStatus
+  priority?: TaskPriority
+  estimatedEffort?: number | null
+}

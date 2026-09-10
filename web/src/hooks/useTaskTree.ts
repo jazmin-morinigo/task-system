@@ -6,14 +6,16 @@ interface UseTaskTreeResult {
   data: TaskNode | null
   isLoading: boolean
   error: string | null
+  refetch: () => void
 }
 
 export function useTaskTree(id: string | undefined): UseTaskTreeResult {
-  const [result, setResult] = useState<UseTaskTreeResult>({
+  const [result, setResult] = useState<Omit<UseTaskTreeResult, 'refetch'>>({
     data: null,
     isLoading: true,
     error: null,
   })
+  const [refreshIndex, setRefreshIndex] = useState(0)
 
   useEffect(() => {
     if (!id) {
@@ -33,7 +35,11 @@ export function useTaskTree(id: string | undefined): UseTaskTreeResult {
       })
 
     return () => controller.abort()
-  }, [id])
+  }, [id, refreshIndex])
 
-  return result
+  function refetch() {
+    setRefreshIndex((i) => i + 1)
+  }
+
+  return { ...result, refetch }
 }

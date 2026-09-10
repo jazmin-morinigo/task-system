@@ -60,7 +60,7 @@ const updateTaskSchema = z
     description: z.string().optional(),
     status: z.enum(TASK_STATUSES).optional(),
     priority: z.enum(TASK_PRIORITIES).optional(),
-    estimatedEffort: estimatedEffortSchema.optional(),
+    estimatedEffort: estimatedEffortSchema.nullable().optional(),
     parentId: z.never({
       invalid_type_error: 'parentId no se puede modificar — se define al crear la tarea.',
     }).optional(),
