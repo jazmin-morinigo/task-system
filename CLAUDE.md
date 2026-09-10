@@ -86,6 +86,13 @@ Respuesta paginada: `{ data, page, limit, total, totalPages }`. Los schemas de `
 `routes/` son la fuente de verdad de los params — no se duplican en prosa acá.
 Default: `page` en `1`, `limit` en `20`.
 
+Todos los errores de la API responden con la misma forma: `{ error: "<mensaje>" }` — tanto los
+`AppError` como el 500 genérico, un único shape de error en toda la API. Los errores de
+validación de `zod` se aplanan en un solo string legible dentro de ese `message`, en vez de un
+array de errores por campo: es una simplificación deliberada para no tener un shape de error
+distinto solo para validación. Un error inesperado responde 500 con un mensaje genérico al
+cliente y loguea el detalle completo del lado del servidor, sin exponerlo.
+
 ### Ordenamiento
 
 `sortBy` ∈ `{createdAt, updatedAt, priority, title}`, `order` ∈ `{asc, desc}`. Default:
