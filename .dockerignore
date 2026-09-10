@@ -12,3 +12,5 @@ coverage/
 db/
 README.md
 CLAUDE.md
+.DS_Store
+Thumbs.db
