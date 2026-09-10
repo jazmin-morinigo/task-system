@@ -16,6 +16,7 @@ export function TaskDetailPage() {
       {data && (
         <div>
           <div className="flex flex-wrap items-center gap-3 border-b pb-2 text-xs font-medium text-muted-foreground">
+            <span className="inline-block size-4" />
             <span className="flex-1">Título</span>
             <span>Estado</span>
             <span>Prioridad</span>

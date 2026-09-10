@@ -50,6 +50,19 @@ const PRIORITY_LABELS: Record<TaskPriority, string> = {
   HIGH: 'Alta',
 }
 
+const STATUS_BADGE_CLASSES: Record<TaskStatus, string> = {
+  TODO: 'bg-status-todo text-status-todo-foreground',
+  IN_PROGRESS: 'bg-status-in-progress text-status-in-progress-foreground',
+  IN_REVIEW: 'bg-status-in-review text-status-in-review-foreground',
+  DONE: 'bg-status-done text-status-done-foreground',
+}
+
+const PRIORITY_DOT_CLASSES: Record<TaskPriority, string> = {
+  LOW: 'bg-priority-low',
+  MEDIUM: 'bg-priority-medium',
+  HIGH: 'bg-priority-high',
+}
+
 const SORT_BY_LABELS: Record<SortBy, string> = {
   createdAt: 'Fecha de creación',
   updatedAt: 'Última actualización',
@@ -198,10 +211,17 @@ export function TaskListPage() {
                 >
                   <TableCell>{task.title}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{STATUS_LABELS[task.status]}</Badge>
+                    <Badge className={`border-transparent ${STATUS_BADGE_CLASSES[task.status]}`}>
+                      {STATUS_LABELS[task.status]}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{PRIORITY_LABELS[task.priority]}</Badge>
+                    <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <span
+                        className={`size-2 rounded-full ${PRIORITY_DOT_CLASSES[task.priority]}`}
+                      />
+                      {PRIORITY_LABELS[task.priority]}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
                     {task.notStartedEffort}
