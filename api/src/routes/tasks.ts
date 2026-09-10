@@ -16,7 +16,7 @@ export const tasksRouter = Router();
 
 // safeParse + armado de detalle de zod + AppError(400), centralizado: lo usan el body del POST,
 // el query del GET y el :id del GET — mismo formato de error en los tres.
-function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown, invalidMessage: string): T {
+function parseOrThrow<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, data: unknown, invalidMessage: string): T {
   const parsed = schema.safeParse(data);
 
   if (!parsed.success) {
