@@ -45,7 +45,7 @@ export function TaskDetailPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto max-w-6xl p-4 md:p-8">
       <Button
         type="button"
         variant="ghost"
