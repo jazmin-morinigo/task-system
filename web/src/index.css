@@ -58,6 +58,8 @@
     --color-priority-low: var(--priority-low);
     --color-priority-medium: var(--priority-medium);
     --color-priority-high: var(--priority-high);
+    --color-header: var(--header);
+    --color-header-foreground: var(--header-foreground);
     --color-filter-panel: var(--filter-panel);
     --color-filter-panel-border: var(--filter-panel-border);
 }
@@ -108,6 +110,9 @@
     --priority-medium: oklch(0.75 0.10 85);
     --priority-high: oklch(0.68 0.12 20);
 
+    --header: oklch(0.88 0.06 260);
+    --header-foreground: oklch(0.32 0.08 260);
+
     --filter-panel: oklch(0.95 0.025 260);
     --filter-panel-border: oklch(0.75 0.05 260);
 }
@@ -156,6 +161,9 @@
     --priority-low: oklch(0.78 0.08 200);
     --priority-medium: oklch(0.78 0.10 85);
     --priority-high: oklch(0.72 0.12 20);
+
+    --header: oklch(0.30 0.07 260);
+    --header-foreground: oklch(0.92 0.05 260);
 
     --filter-panel: oklch(0.26 0.035 260);
     --filter-panel-border: oklch(0.45 0.06 260);
